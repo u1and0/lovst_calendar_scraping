@@ -1,14 +1,15 @@
+"""予約された枠の数をカウントする"""
+import requests
 import json
-from typing import List, Dict
+from typing import Dict
+from bs4 import BeautifulSoup
 
 
-def extract_reservable_slots(html_content: str) -> Dict[str, List[str]]:
-    from bs4 import BeautifulSoup
-
+def count_reserved_slots(html_content: str) -> Dict[str, int]:
     soup = BeautifulSoup(html_content, 'html.parser')
-    reservable_days = {}
+    reserved_slots = {}
 
-    # red-ok クラスの日付のみ取得
+    # red-ok クラスの日付のみ処理
     special_days = soup.find_all('a', class_='red-ok')
 
     for day in special_days:
@@ -17,38 +18,28 @@ def extract_reservable_slots(html_content: str) -> Dict[str, List[str]]:
 
         if hidden_input:
             slot_data = json.loads(hidden_input.get('value'))
-            reservable_times = [
-                slot['name'] for slot in slot_data[0]['comas']
-                if slot.get('reservable', False)
-            ]
+            reserved_count = sum(1 for slot in slot_data[0]['comas']
+                                 if not slot.get('reservable', False))
 
-            reservable_days[date_str] = reservable_times
+            reserved_slots[date_str] = reserved_count
 
-    return reservable_days
+    return reserved_slots
 
 
 # 使用例
 
 
 def main():
-    with open('test_calendar.html', 'r', encoding='utf-8') as f:
-        html_content = f.read()
+    response = requests.get(
+        "https://reserve.lovstmade.com/reserve/calendar/115/202/261")
+    html_content = response.content
+    # with open('test_calendar.html', 'r', encoding='utf-8') as f:
+    #     html_content = f.read()
 
-    reservations = extract_reservable_slots(html_content)
-    for date, times in reservations.items():
-        print(f"{date}: {times}")
+    reservations = count_reserved_slots(html_content)
+    for date, count in reservations.items():
+        print(f"{date}: {count} slots reserved")
 
 
 if __name__ == '__main__':
     main()
-    # 2025年2月9日: ['11:45', '12:00', '12:15', '12:30', '12:45', '13:15',
-    # '13:30',  '13:45', '14:00', '14:15', '14:30', '14:45
-    # ', '15:00', '15:15', '15:30', '15:45', '16:00', '16:15', '16:30',
-    # '16:45', '17:00', '17:15', '17:30', '17:45', '18:00',
-    # '18:15', '18:30', '18:45']
-    # 2025年2月20日: ['10:00', '10:15', '10:30', '10:45', '11:00', '11:15',
-    # '11:30', '11:45', '12:00', '12:15', '12:30', '12:45', '13:00', '13:15',
-    # '13:30', # '13:45', '14:00', '14:15', '14:45', '15:00', '15:15', '15:30',
-    # '15:45', '16:00', '16:15',
-    #  '16:30', '16:45', '17:00', '17:15', '17:30', '17:45', '18:00', '18:15',
-    # '18:30', '18:45']
