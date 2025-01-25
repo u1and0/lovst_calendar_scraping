@@ -86,12 +86,20 @@ async def fetch_store_reservations(
         return store_name, {}
 
 
-async def get_all_reservations(initial_html_content: str):
+async def get_all_reservations(initial_url: str) -> Dict[str, Dict[str, int]]:
     """
-    Returns: [ { 店舗名: { 日付: 予約数 } } ]
+    任意のLovst予約フォームからすべての店舗の予約フォームURLを収集し、
+    それぞれの店舗の予約数をカウントしてdictで返す
+
+    Params: 任意の予約フォームURL
+    Returns: { 店舗名: { 日付: 予約数 } }
     """
+    # HTMLファイルを読み込む
+    print("すべての店舗の予約フォームを収集します")
+    response = requests.get(initial_url)
+
     # 店名とURLのディクショナリを取得
-    store_urls = extract_store_urls(initial_html_content)
+    store_urls = extract_store_urls(response.content)
 
     # 非同期でURLをスクレイピング
     all_store_reservations = {}
@@ -112,22 +120,25 @@ async def get_all_reservations(initial_html_content: str):
     return all_store_reservations
 
 
-async def run_main():
-    # HTMLファイルを読み込む
-    print("すべての店舗の予約フォームを収集します")
-    response = requests.get(
-        "https://reserve.lovstmade.com/reserve/calendar/115/202/261")
+def display_reservations(all_reserve: Dict[str, Dict[str, int]]) -> str:
+    """結果を整形して表示"""
 
-    # 全店舗の予約状況を取得
-    all_reserve = await get_all_reservations(response.content)
+    str_result = []
+    for store, reservations in all_reserve.items():
+        str_result.append(f"\n{store}:")
+        for date, count in reservations.items():
+            str_result.append(f"  {date}: {count} 組が予約しています")
+
+    return "\n".join(str_result)
+
+
+async def main():
+    all_reserve = await get_all_reservations(
+        "https://reserve.lovstmade.com/reserve/calendar/115/202/261")
     print("all_reserve:", all_reserve)
 
-    # 結果を整形して表示
-    for store, reservations in all_reserve.items():
-        print(f"\n{store}:")
-        for date, count in reservations.items():
-            print(f"  {date}: {count} 組が予約しています")
+    print(display_reservations(all_reserve))
 
 
 if __name__ == '__main__':
-    asyncio.run(run_main())
+    asyncio.run(main())
