@@ -1,4 +1,4 @@
-"""予約された枠の数をカウントする"""
+"""Lovstの予約された枠の数をカウントする"""
 import requests
 import asyncio
 import aiohttp
@@ -10,6 +10,12 @@ BASE_URL = "https://reserve.lovstmade.com"
 
 
 def extract_store_urls(html_content: str) -> Dict[str, str]:
+    """予約フォームのHTMLコンテンツ内のsubmenuクラスから
+    各店舗の予約フォームのURLを取得する
+
+    Params: 任意の予約フォームのHTML
+    Returns: { 店舗名: 予約フォームのURL }
+    """
     soup = BeautifulSoup(html_content, 'html.parser')
 
     container = soup.find(id='container')
@@ -33,6 +39,9 @@ def extract_store_urls(html_content: str) -> Dict[str, str]:
 
 
 def count_reserved_slots(html_content: str) -> Dict[str, int]:
+    """予約している時間 = 予約組数を数える
+    Returns: { 日付: 予約数 }
+    """
     soup = BeautifulSoup(html_content, 'html.parser')
     reserved_slots = {}
 
@@ -52,8 +61,19 @@ def count_reserved_slots(html_content: str) -> Dict[str, int]:
     return reserved_slots
 
 
-async def fetch_store_reservations(session: aiohttp.ClientSession,
-                                   store_name: str, url: str) -> tuple:
+async def fetch_store_reservations(
+    session: aiohttp.ClientSession,
+    store_name: str,
+    url: str,
+) -> tuple[str, Dict[str, int]]:
+    """店舗ごとの予約フォームURLから非同期に予約数をカウントする
+
+    Params:
+        session: セッション
+        store_name: 店舗名
+        url: 予約フォームのURL
+    Returns: [ 店舗名, { 日付: 予約数 } ]
+    """
     try:
         print(f"fetching {store_name}...")
         async with session.get(BASE_URL + url) as response:
@@ -66,13 +86,15 @@ async def fetch_store_reservations(session: aiohttp.ClientSession,
         return store_name, {}
 
 
-async def main(initial_html_content: str):
-    # 1. 店名とURLのディクショナリを取得
+async def get_all_reservations(initial_html_content: str):
+    """
+    Returns: [ { 店舗名: { 日付: 予約数 } } ]
+    """
+    # 店名とURLのディクショナリを取得
     store_urls = extract_store_urls(initial_html_content)
 
-    # 2-5. 非同期でURLをスクレイピング
+    # 非同期でURLをスクレイピング
     all_store_reservations = {}
-
     async with aiohttp.ClientSession() as session:
         # タスクを並列に実行
         tasks = [
@@ -92,14 +114,16 @@ async def main(initial_html_content: str):
 
 async def run_main():
     # HTMLファイルを読み込む
+    print("すべての店舗の予約フォームを収集します")
     response = requests.get(
         "https://reserve.lovstmade.com/reserve/calendar/115/202/261")
 
     # 全店舗の予約状況を取得
-    results = await main(response.content)
+    all_reserve = await get_all_reservations(response.content)
+    print("all_reserve:", all_reserve)
 
     # 結果を整形して表示
-    for store, reservations in results.items():
+    for store, reservations in all_reserve.items():
         print(f"\n{store}:")
         for date, count in reservations.items():
             print(f"  {date}: {count} 組が予約しています")
