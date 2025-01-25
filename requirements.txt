@@ -1,0 +1,9 @@
+aiohttp
+asyncio
+beautifulsoup4
+dataclasses
+datetime
+difflib
+json
+os
+requests
