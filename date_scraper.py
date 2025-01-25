@@ -57,6 +57,14 @@ class AllReservations:
         """店舗の予約情報を追加"""
         self.stores[store_name] = StoreReservations(store_name, reservations)
 
+    def format_message(self) -> str:
+        return f"""
+Lovst Photo Studio 予約フォーム {BASE_URL}
+からモデルオーディション予約組数を集計しました。
+
+{self}
+"""
+
 
 def extract_store_urls(html_content: str) -> Dict[str, str]:
     """予約フォームのHTMLコンテンツ内のsubmenuクラスから
@@ -139,6 +147,7 @@ async def get_all_reservations(initial_url: str) -> AllReservations:
     # 初期の予約フォームからショップ名を取得
     initial_store_name = initial_soup.select_one(
         'div.entry-block h2.shopname').text.strip()
+    print(f"fetching {initial_store_name}...")
     # 初期の予約フォームから予約組数を取得
     initial_reservations = count_reserved_slots(initial_html_content)
     # すべての予約を入れるコンテナ
