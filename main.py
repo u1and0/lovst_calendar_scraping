@@ -1,4 +1,4 @@
-"""lovs"""
+"""Lovst予約フォームからすべての予約をカウントし、前回と差分があったらLINEへ投稿"""
 import asyncio
 from date_scraper import get_all_reservations, BASE_URL
 from link_forest_calendar.line import line_post, is_message_updated
