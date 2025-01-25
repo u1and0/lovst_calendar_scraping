@@ -9,7 +9,7 @@ import message  # メッセージの整形と管理
 from link_forest_calendar import line  # LINE投稿
 
 INIT_URL = "https://reserve.lovstmade.com/reserve/calendar/115/202/261"
-TEMPFILE = "/tmp/lovst_reserve.txt"
+OLD_MESSAGE_FILE = "/tmp/lovst_reserve.txt"
 
 
 async def check_reserve_post():
@@ -25,11 +25,15 @@ async def check_reserve_post():
         print(all_reserve)
         # print("デバッグ用 repr:", repr(all_reserve))
 
-        ok = message.is_updated(str(all_reserve), TEMPFILE)
-        if not ok:
+        diff_str = message.show_diff(str(all_reserve), OLD_MESSAGE_FILE)
+        if not diff_str:
             raise ValueError("前回と同じメッセージなのでLINEに投稿されませんでした。")
 
-        msg = all_reserve.format_message()
+        msg = "\n".join([
+            all_reserve.format_message(),
+            "[前回との差分]",
+            diff_str,
+        ])
         response = line.post(msg)
 
         if response.status_code != 200:
