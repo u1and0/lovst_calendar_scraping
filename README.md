@@ -47,3 +47,26 @@ Lovstモデルオーディション応募フォームから、予約された枠
   2025-02-22: 12
   合計: 28
 ```
+
+# Setup
+
+```
+$ git clone https://github.com/u1and0/lovst_calendar_scraping
+$ git clone https://github.com/u1and0/link_forest_calendar
+```
+
+# Requirements
+requests, BeautifulSoup4, aio-httpが必要です。
+Ubuntuの場合以下のコマンドでインストールします。
+
+```
+$ apt install python3-bs4 python3-requests python3-aiohttp
+```
+
+# Run
+
+```
+$ export PYTHONPATH=/home/your_name/your_python_path
+$ python lovst_calendar_scraping/main.py
+```
+
